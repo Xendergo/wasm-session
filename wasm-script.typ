@@ -88,3 +88,158 @@ So now we can start with the first demo!
 
 - Mandelbrot set
     - I'm assuming that if you wanted to follow along you set everything up in accordance with the README on the github page.
+
+First, we need to set up the HTML for our page.
+
+== HTML
+
+*`index.html`*
+
+```html
+<!doctype html>
+
+<html>
+  <head>
+    <title>Mandelbrot</title>
+  </head>
+
+  <body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <script type="module" src="sketch.js"></script>
+  </body>
+</html>
+```
+
+== JS
+
+Now lets write our Javascript code
+
+I'm implementing this in a roundabout way
+- JS asks WASM to render a frame
+- WASM renders frame
+- WASM asks JS to display the rendered frame
+- JS asks WASM through a callback to copy the frame data into the canvas buffer
+- More straightforward to have WASM return the rendered frame and have JS copy it into the buffer but I want to demo the cool JS interop
+
+*`sketch.js`*
+
+```js
+import init, { render_data } from "./pkg/mandelbrot.js";
+
+(async () => {
+  await init()
+  
+  showThingy(1);
+})()
+```
+---
+```js
+function showThingy(scale) {
+  render_data(scale)
+  
+  requestAnimationFrame(() => showThingy(scale * 0.99))
+}
+```
+---
+```js
+export function set_canvas_data(callback) {
+  let canvas = document.getElementById("canvas");
+  let ctx = canvas.getContext("2d");
+
+  let imageData = ctx.getImageData(0, 0, 800, 600);
+
+  callback(imageData.data)
+
+  ctx.putImageData(imageData, 0, 0);
+}
+```
+
+== Rust
+
+Now we can write our Rust code that will actually generate the mandelbrot set.
+
+*`Cargo.toml`*
+
+```toml
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.74"
+js-sys = "0.3.68"
+```
+---
+
+*`lib.rs`*
+
+```rust
+fn mandelbrot_shade_at_pos(c: (f64, f64), count: usize) -> f64 {
+    let mut z = (0., 0.);
+
+    for i in 0..count {
+        if z.0 * z.0 + z.1 * z.1 > 4. {
+            return i as f64 / count as f64;
+        }
+
+        z = (z.0 * z.0 - z.1 * z.1 + c.0, z.0 * z.1 * 2. + c.1);
+    }
+
+    return 1.;
+}
+```
+---
+```rust
+#[wasm_bindgen]
+pub fn render_data(scale: f64) {
+    let mut data = vec![0; 800 * 600 * 4];
+
+    let count = (10. * (1. / scale).ln()) as usize + 30;
+
+    for x in 0..800 {
+        for y in 0..600 {
+            let shade = mandelbrot_shade_at_pos(
+                (
+                    (x as f64 - 400.) / 200. * scale - 1.5,
+                    (y as f64 - 300.) / 200. * scale,
+                ),
+                count,
+            );
+
+            data[4 * (x + y * 800) + 0] = (shade * 256.) as u8;
+            data[4 * (x + y * 800) + 1] = (shade * 256.) as u8;
+            data[4 * (x + y * 800) + 2] = (shade * 256.) as u8;
+            data[4 * (x + y * 800) + 3] = 255;
+        }
+    }
+
+    set_canvas_data(&Closure::once(move |array: Uint8ClampedArray| {
+        array.copy_from(&data)
+    }));
+}
+```
+---
+```rust
+#[wasm_bindgen(raw_module = "/sketch.js")]
+extern "C" {
+    fn set_canvas_data(s: &Closure<dyn FnMut(Uint8ClampedArray) -> ()>);
+}
+```
+
+== Compiling and running
+
+Now we can actually run it!
+
+```bash
+wasm-pack build --target web
+python3 -m http.server
+```
+
+= WAT
+
+Now observe this meme, it's very important...
+
+Now I know what you're thinking...
+
+WAT?
+
+And you'd be right!

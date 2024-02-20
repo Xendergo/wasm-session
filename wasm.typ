@@ -94,7 +94,23 @@ fn App() -> impl IntoView {
     - No access to the standard library
 ])
 
-#split-slide(title: [How do I use it?], content: [
+#mono-slide(title: [Demo 1!], content: [
     - Mandelbrot set
         - You should already have everything set up if you want to follow along
 ], )
+
+#mono-slide(title: [Now observe this Meme], content: box(align(center, image("slideshow-images/earthquack.png")), width: 100%, height: 83%))
+
+#mono-slide(title: [I know what you're thinking...], content: {
+    set text(40pt)
+    v(20%)
+    uncover(2,
+        grid(rows: 3, gutter: 25pt, [W], [A], [T])
+    )
+})
+
+#mono-slide(title: [And you'd be right!], content: {
+    set text(40pt)
+    v(20%)
+    grid(rows: 3, gutter: 25pt, [Web], [Assembly], [Text])
+})
