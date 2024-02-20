@@ -25,4 +25,7 @@ will just work and you're all set. If it doesn't work, you can install python3. 
 
 ## WAT aka "raw webassembly" demo setup
 
-TODO!
+1. Check if something like `wabt` exists in your package manager of choice. If so, install it.
+2. Go to [https://github.com/webassembly/wabt](https://github.com/webassembly/wabt?tab=readme-ov-file#building-using-cmake-directly-linux-and-macos) and follow the instructions to build the program. Then add `*clone-directory*/wabt/out/clang/Debug` to your system path so you can type `wat2wasm` instead of the full path to it. Do that however your operating system does that; google or me can help you if you need.
+3. cd into `scratchcards` and run `wat2wasm solution.wat` to assemble the wat code into wasm.
+4. Start a local server in `scratchcards` and go to the localhost address. You should see `26218` on the screen; that means it worked! If the number's `13`, then I changed the input data without changing the README because I'm an idiot.
