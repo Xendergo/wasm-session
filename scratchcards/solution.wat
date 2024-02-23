@@ -14,20 +14,23 @@
 			;; Solve the line
 			local.get $line_position
 			global.get $end_of_input
-			call $solve_line
+			call $solve_line ;; Give it the line start and the end of the input as scratchspace
 
 			;; Process the return value
+
 			local.tee $solve_line_output
 
-			i32.wrap_i64
+			;; Add the answer to the solution accumulator
+			i32.wrap_i64 ;; Take the first four bytes
 			local.get $solution_accumulator
 			i32.add
 			call $log
 			local.set $solution_accumulator
 
+			;; Update the line position to the start of next line
 			local.get $solve_line_output
 			i64.const 32
-			i64.shr_u
+			i64.shr_u ;; Take the last four bytes
 			i32.wrap_i64
 			call $log
 			local.tee $line_position
@@ -43,22 +46,17 @@
 		local.get $solution_accumulator
 	)
 
-	;; Return is 4 bytes for the position after the newline and 4 bytes for the result
+	;; Parses a line; Return is 4 bytes for the position after the newline and 4 bytes for the result
 	(func $solve_line (param $start_of_line i32) (param $start_of_scratch i32) (result i64)
 		;; I'm using the scratch space to store the winning numbers
 		(local $winning_number_pos i32)
 		(local $winning_number_count i32)
-
-		i32.const 0
-		local.set $winning_number_pos
 	
 		;; Skip to the first colon
 		(loop $skip_to_colon
 			;; Compare the character
 			local.get $start_of_line
-			i32.load
-			i32.const 0xff
-			i32.and
+			i32.load8_u
 			i32.const 58 ;; :
 			i32.ne
 
@@ -105,9 +103,7 @@
 
 			;; Compare the character
 			local.get $start_of_line
-			i32.load
-			i32.const 0xff
-			i32.and
+			i32.load8_u
 			i32.const 124 ;; Pipe
 			i32.ne
 
@@ -128,10 +124,15 @@
 
 			;; Check the number and maybe increment $winning_number_count
 			local.get $start_of_scratch
+
 			local.get $start_of_scratch
 			local.get $winning_number_pos
-			i32.add
-			call $check_num
+			i32.add ;; Add to find the end of the buffer
+
+			;; The stack looks like [parsed num, start of winning numbers, end of winning numbers]
+			call $check_num 
+
+			;; Increment the winning number count if it is
 			local.get $winning_number_count
 			i32.add
 			local.set $winning_number_count
@@ -144,9 +145,7 @@
 
 			;; Compare the character
 			local.get $start_of_line
-			i32.load
-			i32.const 0xff
-			i32.and
+			i32.load8_u
 			i32.const 10 ;; \n
 			i32.ne
 
@@ -155,12 +154,17 @@
 
 		;; Return the result + funny exponent thing
 		i32.const 1
+
 		local.get $winning_number_count
 		i32.const 1
 		i32.sub
+
+		;; Shift 1 by one minus the amount of winning numbers (if there are zero, it'll shift -1, right shifting out the one)
 		i32.shl
+
 		i64.extend_i32_u
 
+		;; Put the new line start in there
 		local.get $start_of_line
 		i64.extend_i32_u
 		i64.const 32
@@ -184,7 +188,7 @@
 				i32.add
 				local.tee $winning_numbers_buf_addr
 
-				;; Continue if I haven't hit the end of the buffer yet
+				;; Continue if we haven't hit the end of the buffer yet
 				local.get $buf_end_addr
 				i32.ne
 				br_if $check_loop
@@ -195,6 +199,6 @@
 			))
 		)
 	
-		i32.const 0
+		i32.const 0 ;; Return zero if we went through the whole loop and didn't find a match
 	)
 )

@@ -114,3 +114,38 @@ fn App() -> impl IntoView {
     v(20%)
     grid(rows: 3, gutter: 25pt, [Web], [Assembly], [Text])
 })
+
+#split-slide(title: [Sections], content: [
+    - Globally accessable stuff
+        - Memory
+        - Globals
+        - Imports
+        - Exports
+        - Functions
+        - etc.
+], picture: [
+    #set text(15pt)
+    ```wat
+    (module
+        	(memory (import "js" "mem") 1)
+        	(global $end_of_input (import "js" "endOfInput") i32)
+
+        	(import "console" "log" (func $log (param i32) (result i32)))
+        	(import "js" "parseNum" (func $parse_num (param i32) (result i32)))
+
+        	(func (export "solve") (result i32)
+             ; ...
+          )
+    )
+    ```
+])
+
+#mono-slide(title: [Instructions/Execution], content: [
+    - Small instruction set
+    - Mix of stack and register based
+    - Higher level control flow constructs
+])
+
+#mono-slide(title: [Demo!], content: [
+    https://adventofcode.com/2023/day/4
+])
