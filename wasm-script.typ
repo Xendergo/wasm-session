@@ -1,5 +1,7 @@
 #import "@local/henrys-typst-utils:0.1.0" : *
 
+#set text(0.99em)
+
 = Title
 
 So you're writing a website, right? And you're just thinking to yourself \"Wow, javascript really sucks, I wish I could be using anything else right now.\" Well guess what, you can, and it's called webassembly, and I'm going to teach you all about it in tonights session.
@@ -13,7 +15,7 @@ So what will I be talking about?
     - Mandelbrot set
 - Raw
     - for crazy people or you want to learn fundamentals
-    - AoC day 4
+    - AoC day 4 part 1
 
 = What am I not talking about?
 
@@ -489,4 +491,44 @@ i64.const 32
 i64.shl
 
 i64.or
+```
+
+== `index.html`
+
+Now we can finish it off by writing the JS code to interface with it.
+
+```js
+// Create the memory (one page)
+const memory = new WebAssembly.Memory({ initial: 1, maximum: 1 });
+
+// Get the memory buffer
+const array = new Uint8Array(memory.buffer);
+
+// Write the input into memory
+for (let i = 0; i < input.length; i++) {
+  array[i] = input.charCodeAt(i);
+}
+
+// Load the module
+let module = await WebAssembly.instantiateStreaming(
+  fetch("solution.wasm"),
+  {
+    js: {
+      mem: memory,
+      endOfInput: input.length,
+      parseNum: (pos) => parseInt(input.slice(pos, pos + 3)),
+    },
+    console: { log: (n) => (console.log(n), n) },
+  },
+);
+
+document.getElementById("answer").innerText =
+  module.instance.exports.solve();
+```
+
+== Test it
+
+```bash
+wat2wasm solution.wat
+python3 -m http.server
 ```
